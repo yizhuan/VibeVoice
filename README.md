@@ -106,6 +106,21 @@ python demo/inference_from_file.py --model_path vibevoice/VibeVoice-7B --txt_pat
 python demo/inference_from_file.py --model_path vibevoice/VibeVoice-7B --txt_path demo/text_examples/1p_abs.txt --speaker_names Alice --disable_prefill
 ```
 
+**Option 2b: Gradio UI for file inference (speaker preview + output preview)**
+
+```bash
+python demo/inference_from_file_gradio.py
+
+# custom host/port
+python demo/inference_from_file_gradio.py --host 0.0.0.0 --port 7861
+```
+
+The UI lets you:
+- Select up to 4 speakers from `demo/voices`.
+- Preview selected speaker sample audio before generation.
+- Run `demo/inference_from_file.py` with your settings.
+- Preview the generated `.wav` output directly in the browser.
+
 **Option 3: Streaming Model (0.5B) - Real-time TTS**
 
 The streaming model uses pre-computed voice embeddings for low-latency generation:

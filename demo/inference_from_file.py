@@ -15,6 +15,15 @@ logging.set_verbosity_info()
 logger = logging.get_logger(__name__)
 
 
+def sanitize_filename_component(value: str) -> str:
+    """Convert an arbitrary string into a filesystem-safe filename component."""
+    if not value:
+        return ""
+    # Keep unicode word chars and dash; replace other runs with underscore.
+    sanitized = re.sub(r"[^\w-]+", "_", value, flags=re.UNICODE)
+    return sanitized.strip("_")
+
+
 class VoiceMapper:
     """Maps speaker names to voice file paths"""
     
@@ -49,17 +58,26 @@ class VoiceMapper:
         # Scan for all WAV files in the voices directory
         self.voice_presets = {}
         
-        # Get all .wav files in the voices directory
-        wav_files = [f for f in os.listdir(voices_dir) 
-                    if f.lower().endswith('.wav') and os.path.isfile(os.path.join(voices_dir, f))]
-        
-        # Create dictionary with filename (without extension) as key
-        for wav_file in wav_files:
-            # Remove .wav extension to get the name
-            name = os.path.splitext(wav_file)[0]
-            # Create full path
-            full_path = os.path.join(voices_dir, wav_file)
-            self.voice_presets[name] = full_path
+        # Get supported voice files from the voices directory.
+        # Prefer .pt when both .wav and .pt exist for the same base name.
+        supported_exts = {'.wav': 1, '.pt': 2}
+        candidate_files = [
+            f for f in os.listdir(voices_dir)
+            if os.path.isfile(os.path.join(voices_dir, f))
+            and os.path.splitext(f)[1].lower() in supported_exts
+        ]
+
+        for voice_file in sorted(candidate_files):
+            name, ext = os.path.splitext(voice_file)
+            full_path = os.path.join(voices_dir, voice_file)
+
+            if name not in self.voice_presets:
+                self.voice_presets[name] = full_path
+                continue
+
+            existing_ext = os.path.splitext(self.voice_presets[name])[1].lower()
+            if supported_exts[ext.lower()] > supported_exts.get(existing_ext, 0):
+                self.voice_presets[name] = full_path
         
         # Sort the voice presets alphabetically by name for better UI
         self.voice_presets = dict(sorted(self.voice_presets.items()))
@@ -194,6 +212,12 @@ def parse_args():
     default=None,
     help="Random seed for reproducibility (optional)",
 )
+    parser.add_argument(
+        "--output_suffix",
+        type=str,
+        default="",
+        help="Optional suffix appended to output filename before extension",
+    )
     return parser.parse_args()
 
 def main():
@@ -422,7 +446,9 @@ def main():
 
     # Save output (processor handles device internally)
     txt_filename = os.path.splitext(os.path.basename(args.txt_path))[0]
-    output_path = os.path.join(args.output_dir, f"{txt_filename}_generated.wav")
+    suffix = sanitize_filename_component(args.output_suffix)
+    suffix_part = f"_{suffix}" if suffix else ""
+    output_path = os.path.join(args.output_dir, f"{txt_filename}_generated{suffix_part}.wav")
     os.makedirs(args.output_dir, exist_ok=True)
     
     processor.save_audio(
