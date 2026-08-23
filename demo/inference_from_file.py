@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+import shutil
 import traceback
 from typing import List, Tuple, Union, Dict, Any
 import time
@@ -22,6 +23,40 @@ def sanitize_filename_component(value: str) -> str:
     # Keep unicode word chars and dash; replace other runs with underscore.
     sanitized = re.sub(r"[^\w-]+", "_", value, flags=re.UNICODE)
     return sanitized.strip("_")
+
+
+def prepare_input_file(txt_path: str, output_dir: str, num_speakers: int) -> str:
+    """Copy an input script to the output directory and add missing speaker labels."""
+    if num_speakers < 1:
+        raise ValueError("At least one speaker is required")
+
+    os.makedirs(output_dir, exist_ok=True)
+    prepared_path = os.path.join(output_dir, os.path.basename(txt_path))
+    if os.path.abspath(txt_path) != os.path.abspath(prepared_path):
+        shutil.copy2(txt_path, prepared_path)
+
+    with open(prepared_path, 'r', encoding='utf-8') as f:
+        txt_content = f.read()
+
+    speaker_pattern = r'^\s*Speaker\s+\d+:\s*'
+    if not re.search(speaker_pattern, txt_content, re.IGNORECASE | re.MULTILINE):
+        paragraph_parts = re.split(r'(\n\s*\n)', txt_content)
+        speaker_index = 0
+        for index in range(0, len(paragraph_parts), 2):
+            paragraph = paragraph_parts[index]
+            if not paragraph.strip():
+                continue
+            leading_whitespace = paragraph[:len(paragraph) - len(paragraph.lstrip())]
+            paragraph_parts[index] = (
+                f"{leading_whitespace}Speaker {speaker_index % num_speakers + 1}: "
+                f"{paragraph.lstrip()}"
+            )
+            speaker_index += 1
+
+        with open(prepared_path, 'w', encoding='utf-8') as f:
+            f.write(''.join(paragraph_parts))
+
+    return prepared_path
 
 
 class VoiceMapper:
@@ -249,9 +284,12 @@ def main():
         print(f"Error: txt file not found: {args.txt_path}")
         return
     
-    # Read and parse txt file
-    print(f"Reading script from: {args.txt_path}")
-    with open(args.txt_path, 'r', encoding='utf-8') as f:
+    speaker_names_list = args.speaker_names if isinstance(args.speaker_names, list) else [args.speaker_names]
+    prepared_txt_path = prepare_input_file(args.txt_path, args.output_dir, len(speaker_names_list))
+
+    # Read and parse the copied txt file
+    print(f"Reading script from: {prepared_txt_path}")
+    with open(prepared_txt_path, 'r', encoding='utf-8') as f:
         txt_content = f.read()
     
     # Parse the txt content to get speaker numbers
@@ -268,7 +306,6 @@ def main():
     
     # Map speaker numbers to provided speaker names
     speaker_name_mapping = {}
-    speaker_names_list = args.speaker_names if isinstance(args.speaker_names, list) else [args.speaker_names]
     for i, name in enumerate(speaker_names_list, 1):
         speaker_name_mapping[str(i)] = name
     
@@ -445,12 +482,10 @@ def main():
     print(f"Total tokens: {output_tokens}")
 
     # Save output (processor handles device internally)
-    txt_filename = os.path.splitext(os.path.basename(args.txt_path))[0]
+    txt_filename = os.path.splitext(os.path.basename(prepared_txt_path))[0]
     suffix = sanitize_filename_component(args.output_suffix)
     suffix_part = f"_{suffix}" if suffix else ""
     output_path = os.path.join(args.output_dir, f"{txt_filename}_generated{suffix_part}.wav")
-    os.makedirs(args.output_dir, exist_ok=True)
-    
     processor.save_audio(
         outputs.speech_outputs[0], # First (and only) batch item
         output_path=output_path,
@@ -461,7 +496,7 @@ def main():
     print("\n" + "="*50)
     print("GENERATION SUMMARY")
     print("="*50)
-    print(f"Input file: {args.txt_path}")
+    print(f"Input file: {prepared_txt_path}")
     print(f"Output file: {output_path}")
     print(f"Speaker names: {args.speaker_names}")
     print(f"Number of unique speakers: {len(set(speaker_numbers))}")
