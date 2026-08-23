@@ -54,7 +54,7 @@ def prepare_input_file(txt_path: str, output_dir: str, num_speakers: int) -> str
             speaker_index += 1
 
         with open(prepared_path, 'w', encoding='utf-8') as f:
-            f.write(''.join(paragraph_parts))
+            f.write(''.join(f"{part}\n" for part in paragraph_parts))
 
     return prepared_path
 
