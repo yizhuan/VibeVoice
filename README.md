@@ -34,6 +34,8 @@ Fine-tuning is now supported, which is incredibly powerful. You can adapt VibeVo
 
 ## Updates
 
+- **[2026-08-27]** VibeVoice is part of Transformers 🤗 Check the model cards ([1.5B](https://huggingface.co/vibevoice/VibeVoice-1.5B-hf) and [7B](https://huggingface.co/vibevoice/VibeVoice-7B-hf)) for examples, including batched inference and torch compile ⚡
+- **[2026-06-12]** [Unofficial voice cloning](https://huggingface.co/mohammed-bahumaish/vibevoice-realtime-0.5b-with-encoder) for Streaming/Realtime model released by community member
 - **[2025-12-04]** Added support for VibeVoice-Streaming-0.5B model for real-time TTS!
 - **[2025-09-05]** Microsoft repo restored (without code) with statement about responsible AI use.
 - **[2025-09-04]** Community backup created after Microsoft removed original repo and models.
@@ -43,7 +45,8 @@ Fine-tuning is now supported, which is incredibly powerful. You can adapt VibeVo
 ## Roadmap
 
 - [x] Unofficial/community training code
-- [ ] HF Transformers integration ([PR](https://github.com/huggingface/transformers/pull/40546))
+- [x] HF Transformers integration ([PR](https://github.com/huggingface/transformers/pull/40546))
+- [ ] HF Transformers integration for the realtime/streaming model ([PR](https://github.com/huggingface/transformers/pull/42781))
 - [ ] VibePod: End-to-end solution that creates podcasts from documents, webpages, or even a simple topic.
 
 ## Model Zoo
@@ -53,10 +56,12 @@ Fine-tuning is now supported, which is incredibly powerful. You can adapt VibeVo
 | VibeVoice-Streaming-0.5B | 8K | Real-time | 1 | [HF link](https://huggingface.co/microsoft/VibeVoice-Realtime-0.5B) |
 | VibeVoice-1.5B | 64K | ~90 min | Up to 4 | [HF link](https://huggingface.co/vibevoice/VibeVoice-1.5B) |
 | VibeVoice-Large (7B) | 32K | ~45 min | Up to 4 | [HF link](https://huggingface.co/vibevoice/VibeVoice-7B) |
+| VibeVoice-1.5B-hf | 64K | ~90 min | Up to 4 | [HF link](https://huggingface.co/vibevoice/VibeVoice-1.5B-hf) |
+| VibeVoice-7B-hf | 32K | ~45 min | Up to 4 | [HF link](https://huggingface.co/vibevoice/VibeVoice-7B-hf) |
 
 ### Model Comparison
 
-- **VibeVoice-Streaming-0.5B**: Optimized for **real-time** low-latency TTS. Single speaker only. Uses pre-computed voice embeddings (.pt files) for fast inference. Best for live applications.
+- **VibeVoice-Streaming-0.5B**: Optimized for **real-time** low-latency TTS. Single speaker only. Uses pre-computed voice embeddings (.pt files) for fast inference. Best for live applications. [Unofficial voice cloning](https://huggingface.co/mohammed-bahumaish/vibevoice-realtime-0.5b-with-encoder)
 - **VibeVoice-1.5B/7B**: Full-featured models for **long-form multi-speaker** content like podcasts. Support up to 4 speakers with voice cloning from audio samples.
 
 ## Installation
