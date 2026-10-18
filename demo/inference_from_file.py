@@ -53,8 +53,8 @@ def prepare_input_file(txt_path: str, output_dir: str, num_speakers: int) -> str
             )
             speaker_index += 1
 
-        with open(prepared_path, 'w', encoding='utf-8') as f:
-            f.write(''.join(f"{part}\n" for part in paragraph_parts))
+        with open(prepared_path, 'w', newline="\r\n", encoding='utf-8') as f:
+            f.write(''.join(f"{part.strip()}\n" for part in paragraph_parts))
 
     return prepared_path
 
@@ -77,7 +77,7 @@ class VoiceMapper:
 
             new_dict[name] = path
         self.voice_presets.update(new_dict)
-        # print(list(self.voice_presets.keys()))
+        print(list(self.voice_presets.keys()))
 
     def setup_voice_presets(self):
         """Setup voice presets by scanning the voices directory."""
@@ -459,6 +459,15 @@ def main():
 
     print(f"Starting generation with cfg_scale: {args.cfg_scale}")
 
+    generator = None
+    if args.seed is not None:
+        try:
+            generator = torch.Generator(device=target_device if target_device == "cuda" else "cpu")
+            generator.manual_seed(int(args.seed))
+        except Exception as exc:
+            print(f"Warning: failed to create seeded generator (seed={args.seed}, device={target_device}): {exc}")
+            generator = None
+
     # Generate audio
     start_time = time.time()
     outputs = model.generate(
@@ -467,7 +476,9 @@ def main():
         cfg_scale=args.cfg_scale,
         tokenizer=processor.tokenizer,
         generation_config={'do_sample': False},
+        generator=generator,
         verbose=True,
+        refresh_negative=True,
         is_prefill=not args.disable_prefill,
     )
     generation_time = time.time() - start_time

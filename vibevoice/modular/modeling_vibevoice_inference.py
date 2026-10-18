@@ -394,6 +394,7 @@ class VibeVoiceForConditionalGenerationInference(VibeVoicePreTrainedModel, Gener
         correct_cnt = torch.zeros(batch_size, dtype=torch.long, device=device)
         inputs_embeds = None
         verbose = kwargs.get("verbose", False)
+        generator = kwargs.get("generator", None)
 
         # Initialize audio chunks storage for each sample
         audio_chunks = [[] for _ in range(batch_size)]
@@ -632,6 +633,7 @@ class VibeVoiceForConditionalGenerationInference(VibeVoicePreTrainedModel, Gener
                     positive_condition,
                     negative_condition,
                     cfg_scale=cfg_scale,
+                    generator=generator,
                 ).unsqueeze(1)
                                 
                 # Decode acoustic latent to audio using acoustic streaming cache
@@ -697,10 +699,10 @@ class VibeVoiceForConditionalGenerationInference(VibeVoicePreTrainedModel, Gener
         )
     
     @torch.no_grad()
-    def sample_speech_tokens(self, condition, neg_condition, cfg_scale=3.0):
+    def sample_speech_tokens(self, condition, neg_condition, cfg_scale=3.0, generator=None):
         self.model.noise_scheduler.set_timesteps(self.ddpm_inference_steps)
         condition = torch.cat([condition, neg_condition], dim=0).to(self.model.prediction_head.device)
-        speech = torch.randn(condition.shape[0], self.config.acoustic_vae_dim).to(condition)
+        speech = torch.randn(condition.shape[0], self.config.acoustic_vae_dim, device=condition.device, generator=generator).to(condition)
         for t in self.model.noise_scheduler.timesteps:
             half = speech[: len(speech) // 2]
             combined = torch.cat([half, half], dim=0)

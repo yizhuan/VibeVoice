@@ -316,13 +316,14 @@ class VibeVoiceDemo:
                 line = line.strip()
                 if not line:
                     continue
-                    
+
                 # Check if line already has speaker format
                 if line.startswith('Speaker ') and ':' in line:
                     formatted_script_lines.append(line)
                 else:
-                    # Auto-assign to speakers in rotation
-                    speaker_id = len(formatted_script_lines) % num_speakers
+                    # Auto-assign to speakers in rotation using 1-based speaker IDs
+                    # to match the CLI/script contract used elsewhere in the project.
+                    speaker_id = (len(formatted_script_lines) % num_speakers) + 1
                     formatted_script_lines.append(f"Speaker {speaker_id}: {line}")
             
             formatted_script = '\n'.join(formatted_script_lines)
@@ -358,7 +359,8 @@ class VibeVoiceDemo:
                 stop_signal=None,
                 timeout=None
             )
-            
+            audio_streamer.reset()
+
             # Store current streamer for potential stopping
             self.current_streamer = audio_streamer
             
